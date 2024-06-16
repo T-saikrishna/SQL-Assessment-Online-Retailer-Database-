@@ -1,0 +1,115 @@
+-- customers table
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    email VARCHAR(100)
+);
+
+-- orders table
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+-- products table
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10, 2)
+);
+
+-- order_items table
+CREATE TABLE order_items (
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price DECIMAL(10, 2),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+-- Insert customers
+INSERT INTO customers (customer_id, first_name, last_name, email) VALUES
+(101, 'sai', 'krishna', 'saikrishna333@example.com'),
+(102, 'pavan', 'kumar', 'pavankumar@example.com'),
+(103, 'siva', 'teja', 'tejasiva5@example.com');
+
+-- Insert products
+INSERT INTO products (product_id, product_name, price) VALUES
+(1, 'Product A', 10.00),
+(2, 'Product B', 20.00),
+(3, 'Product C', 30.00);
+
+-- Insert orders
+INSERT INTO orders (order_id, customer_id, order_date) VALUES
+(1, 101, '2024-05-15'),
+(2, 102, '2024-05-20'),
+(3, 103, '2024-01-11');
+
+-- Insert order items
+INSERT INTO order_items (order_item_id, order_id, product_id, quantity, price) VALUES
+(111, 1, 1, 2, 10.00),
+(112, 1, 2, 1, 20.00),
+(113, 2, 1, 1, 10.00);
+
+-- Query to find the total number of orders placed by each customer
+SELECT 
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    COUNT(o.order_id) AS total_orders
+FROM 
+    customers c
+LEFT JOIN 
+    orders o ON c.customer_id = o.customer_id
+GROUP BY 
+    c.customer_id, c.first_name, c.last_name;
+
+-- Query to list the products that have never been ordered
+SELECT 
+    p.product_id,
+    p.product_name
+FROM 
+    products p
+LEFT JOIN 
+    order_items oi ON p.product_id = oi.product_id
+WHERE 
+    oi.order_item_id IS NULL;
+
+-- Query to find the customer who has spent the most money in the last month
+WITH last_month_orders AS (
+    SELECT 
+        o.customer_id,
+        SUM(oi.quantity * oi.price) AS total_spent
+    FROM 
+        orders o
+    JOIN 
+        order_items oi ON o.order_id = oi.order_id
+    WHERE 
+        o.order_date >= LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH) + INTERVAL 1 DAY - INTERVAL 1 MONTH
+        AND o.order_date < LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH) + INTERVAL 1 DAY
+    GROUP BY 
+        o.customer_id
+)
+SELECT 
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    lmo.total_spent
+FROM 
+    last_month_orders lmo
+JOIN 
+    customers c ON lmo.customer_id = c.customer_id
+ORDER BY 
+    lmo.total_spent DESC
+LIMIT 1;
+
+
+
+
+
+
